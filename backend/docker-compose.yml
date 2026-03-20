@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:17
+    container_name: p4nth3on-db
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${POSTGRES_DB_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_DB_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB_NAME}
+      - PGPORT=${POSTGRES_DB_PORT}
+    ports:
+      - "${POSTGRES_DB_PORT}:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_DB_USER} -d ${POSTGRES_DB_NAME} -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  atlas-dev-db:
+    image: postgres:17
+    container_name: p4nth3on-atlas-dev-db
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=atlas
+      - POSTGRES_PASSWORD=atlas
+      - POSTGRES_DB=dev
+      - PGPORT=5433
+    ports:
+      - "5433:5432"
+    volumes:
+      - atlas_dev_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U atlas -d dev -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: p4nth3on-api
+    tty: true
+    env_file:
+      - .env
+    environment:
+      PORT: 8080
+      POSTGRES_DB_HOST: db
+      POSTGRES_DB_PORT: ${POSTGRES_DB_PORT}
+      POSTGRES_DB_USER: ${POSTGRES_DB_USER}
+      POSTGRES_DB_PASSWORD: ${POSTGRES_DB_PASSWORD}
+      POSTGRES_DB_NAME: ${POSTGRES_DB_NAME}
+      APP_ENV: local
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID}
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  db_data:
+  atlas_dev_data:
