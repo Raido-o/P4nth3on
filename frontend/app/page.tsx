@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import { Alert, Box, Snackbar, Typography } from "@mui/material";
 import TopicInput from "./components/TopicInput";
 import AgentSelector from "./components/AgentSelector";
 import DiscussionControls from "./components/DiscussionControls";
-import MessageCard from "./components/MessageCard";
 import DiscussionSummary from "./components/DiscussionSummary";
+import VirtualMessageList from "./components/VirtualMessageList";
 import { GREAT_PERSONS } from "./data/greatPersons";
 import type { DiscussionState, Message } from "./types";
 import type { SummaryData } from "./components/DiscussionSummary";
@@ -27,15 +27,6 @@ export default function Home() {
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const stopRef = useRef(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   const handleTopicSet = (newTopic: string) => {
     setTopic(newTopic);
@@ -410,24 +401,8 @@ export default function Home() {
                 </Box>
               </Box>
 
-              {/* 投稿リスト */}
-              {messages.length === 0 ? (
-                <Box sx={{ p: 4, textAlign: "center", bgcolor: "#fafafa" }}>
-                  <Typography sx={{ fontFamily: "monospace", fontSize: "0.8rem", color: "#999" }}>
-                    &gt;&gt; 投稿がありません。議題を設定して議論を開始してください。&lt;&lt;
-                  </Typography>
-                  <Typography sx={{ fontFamily: "monospace", fontSize: "0.7rem", color: "#bbb", mt: 1 }}>
-                    - No posts yet. Set a topic and start discussion. -
-                  </Typography>
-                </Box>
-              ) : (
-                <Box>
-                  {messages.map((msg, i) => (
-                    <MessageCard key={msg.id} message={msg} index={i} />
-                  ))}
-                  <div ref={messagesEndRef} />
-                </Box>
-              )}
+              {/* 投稿リスト（仮想スクロール） */}
+              <VirtualMessageList messages={messages} height={600} />
 
               {/* フッター */}
               <Box
