@@ -6,8 +6,10 @@ import TopicInput from "./components/TopicInput";
 import AgentSelector from "./components/AgentSelector";
 import DiscussionControls from "./components/DiscussionControls";
 import MessageCard from "./components/MessageCard";
+import DiscussionSummary from "./components/DiscussionSummary";
 import { GREAT_PERSONS } from "./data/greatPersons";
 import type { DiscussionState, Message } from "./types";
+import type { SummaryData } from "./components/DiscussionSummary";
 import Image from "next/image";
 
 export default function Home() {
@@ -21,6 +23,9 @@ export default function Home() {
   const [state, setState] = useState<DiscussionState>("idle");
   const [messages, setMessages] = useState<Message[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [summary, setSummary] = useState<SummaryData | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const stopRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -48,8 +53,37 @@ export default function Home() {
     setTopic("");
     setMessages([]);
     setState("idle");
+    setSummary(null);
+    setSummaryError(null);
     stopRef.current = false;
   };
+
+  const generateSummary = useCallback(async (msgs: Message[], currentTopic: string) => {
+    if (msgs.length === 0) return;
+    setSummaryLoading(true);
+    setSummaryError(null);
+    setSummary(null);
+    try {
+      const res = await fetch("/api/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: currentTopic,
+          messages: msgs.map((m) => ({ agentNameJa: m.agentNameJa, content: m.content })),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setSummaryError(data.error ?? "まとめ生成に失敗しました");
+      } else {
+        setSummary(data);
+      }
+    } catch {
+      setSummaryError("通信エラーが発生しました");
+    } finally {
+      setSummaryLoading(false);
+    }
+  }, []);
 
   const generateMessage = useCallback(
     async (
@@ -158,11 +192,17 @@ export default function Home() {
     }
 
     setState("stopped");
-  }, [topic, selectedIds, generateMessage]);
+    generateSummary(currentMessages, topic);
+  }, [topic, selectedIds, generateMessage, generateSummary]);
 
   const handleStop = () => {
     stopRef.current = true;
     setState("stopped");
+    // 停止時点のメッセージでまとめ生成（state更新前なのでsetMessagesの結果を直接参照できないため関数形式で取得）
+    setMessages((prev) => {
+      generateSummary(prev.filter((m) => !m.isStreaming), topic);
+      return prev;
+    });
   };
 
   const isDiscussing = state === "discussing";
@@ -408,6 +448,15 @@ export default function Home() {
                 </Typography>
               </Box>
             </Box>
+
+            {/* まとめ */}
+            {(summaryLoading || summary || summaryError) && (
+              <DiscussionSummary
+                summary={summary}
+                isLoading={summaryLoading}
+                error={summaryError}
+              />
+            )}
           </Box>
 
           {/* 右: サイドバー */}
