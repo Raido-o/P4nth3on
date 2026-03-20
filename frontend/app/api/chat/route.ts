@@ -22,12 +22,27 @@ export async function POST(req: NextRequest) {
   }
 
   const body: RequestBody = await req.json();
-  const { topic, agentSystemPrompt, agentName, conversationHistory, contextDepth } = body;
+  const {
+    topic,
+    agentSystemPrompt,
+    agentName,
+    conversationHistory,
+    contextDepth,
+  } = body;
 
   const maxHistory = contextDepth === 0 ? 0 : conversationHistory.length;
   const trimmedHistory = conversationHistory.slice(-maxHistory);
 
   const systemInstruction = `${agentSystemPrompt}
+ただし、一般に自分を代表する用語ではなく、その周辺の関連用語を用いて下さい。
+相手の発言内容と自分の専門分野との無闇なこじつけ・議題の趣旨と外れた発言は絶対に止めてください。
+
+至上命題として一般論・具体例は一切語らず、可能な限り新奇・極端な意見を主張してください。
+批判的思考を行い、問題設定の適切さについても検証してください。
+相手の議論と組み合わせて創発してください。
+抽象的な議論ではなく、自分の思想から距離をおいた具体的な解決策の提示が必要です。
+自分の思想は説明しないでください。可能な限り専門用語を用い、平易な表現を使わないでください。
+主題の背景について十分考察した後に発言すること。ただし相手の発言をすべて拾うのは冗長です。
 
 議題: 「${topic}」
 
@@ -45,12 +60,20 @@ export async function POST(req: NextRequest) {
   if (contents.length === 0) {
     contents.push({
       role: "user",
-      parts: [{ text: `${agentName}として、議題「${topic}」についてあなたの最初の見解を述べてください。` }],
+      parts: [
+        {
+          text: `${agentName}として、議題「${topic}」についてあなたの最初の見解を述べてください。`,
+        },
+      ],
     });
   } else {
     contents.push({
       role: "user",
-      parts: [{ text: `${agentName}として、この議論に対するあなたの見解を続けてください。` }],
+      parts: [
+        {
+          text: `${agentName}として、この議論に対するあなたの見解を続けてください。`,
+        },
+      ],
     });
   }
 
@@ -72,20 +95,19 @@ export async function POST(req: NextRequest) {
           },
         },
       }),
-    }
+    },
   );
 
   if (!geminiRes.ok) {
     const errJson = await geminiRes.json().catch(() => null);
     const statusCode = geminiRes.status;
-    const message =
-      errJson?.error?.message ?? "Gemini API request failed";
+    const message = errJson?.error?.message ?? "Gemini API request failed";
     return new Response(
       JSON.stringify({ error: message, status: statusCode }),
       {
         status: 502,
         headers: { "Content-Type": "application/json" },
-      }
+      },
     );
   }
 
@@ -108,8 +130,7 @@ export async function POST(req: NextRequest) {
               if (data === "[DONE]") continue;
               try {
                 const parsed = JSON.parse(data);
-                const text =
-                  parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
+                const text = parsed?.candidates?.[0]?.content?.parts?.[0]?.text;
                 if (text) {
                   controller.enqueue(new TextEncoder().encode(text));
                 }

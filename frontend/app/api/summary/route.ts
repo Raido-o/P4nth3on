@@ -10,7 +10,10 @@ type RequestBody = {
 export async function POST(req: NextRequest) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return new Response(JSON.stringify({ error: "GEMINI_API_KEY is not set" }), { status: 500 });
+    return new Response(
+      JSON.stringify({ error: "GEMINI_API_KEY is not set" }),
+      { status: 500 },
+    );
   }
 
   const body: RequestBody = await req.json();
@@ -55,14 +58,14 @@ JSONのみを返してください。マークダウンのコードブロック�
           thinkingConfig: { thinkingBudget: 0 },
         },
       }),
-    }
+    },
   );
 
   if (!geminiRes.ok) {
     const errJson = await geminiRes.json().catch(() => null);
     return new Response(
       JSON.stringify({ error: errJson?.error?.message ?? "Gemini API error" }),
-      { status: 502, headers: { "Content-Type": "application/json" } }
+      { status: 502, headers: { "Content-Type": "application/json" } },
     );
   }
 
@@ -72,7 +75,9 @@ JSONのみを返してください。マークダウンのコードブロック�
   // JSONを抽出（```json ... ``` で囲まれている場合も対応）
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) {
-    return new Response(JSON.stringify({ error: "Failed to parse summary" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Failed to parse summary" }), {
+      status: 500,
+    });
   }
 
   try {
@@ -81,6 +86,8 @@ JSONのみを返してください。マークダウンのコードブロック�
       headers: { "Content-Type": "application/json" },
     });
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON from Gemini" }), { status: 500 });
+    return new Response(JSON.stringify({ error: "Invalid JSON from Gemini" }), {
+      status: 500,
+    });
   }
 }
