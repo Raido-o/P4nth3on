@@ -13,24 +13,7 @@ security:
 
 paths:
   /health:
-    get:
-      tags:
-        - health
-      summary: ヘルスチェック
-      operationId: healthCheck
-      security: []
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: ok
-
+    $ref: './paths/public/healthcheck.yaml'
   /v1/users:
     post:
       tags:
@@ -59,7 +42,6 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/InternalServerError'
-
   /v1/users/me:
     get:
       tags:
@@ -90,45 +72,11 @@ components:
 
   schemas:
     User:
-      type: object
-      required:
-        - id
-        - email
-        - name
-      properties:
-        id:
-          type: string
-          description: Firebase UID
-          example: "abc123xyz"
-        email:
-          type: string
-          format: email
-          description: メールアドレス
-          example: "user@example.com"
-        name:
-          type: string
-          description: ユーザー名
-          example: "山田太郎"
-
+      $ref: './components/schemas/user.yaml#/User'
     CreateUserRequest:
-      type: object
-      required:
-        - name
-      properties:
-        name:
-          type: string
-          description: ユーザー名
-          example: "山田太郎"
-
+      $ref: './components/schemas/user.yaml#/CreateUserRequest'
     ErrorResponse:
-      type: object
-      properties:
-        code:
-          type: integer
-          description: エラーコード
-        detail:
-          type: string
-          description: エラーメッセージ
+      $ref: './components/schemas/error.yaml#/ErrorResponse'
 
   responses:
     BadRequest:
@@ -137,28 +85,24 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     Unauthorized:
       description: 認証が必要
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     NotFound:
       description: リソースが見つからない
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     Conflict:
       description: リソースが既に存在する
       content:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/ErrorResponse'
-
     InternalServerError:
       description: サーバー内部エラー
       content:

@@ -1,4 +1,4 @@
-.PHONY: help run dev build test tidy generate_ent migrate_up migrate_diff docker_up docker_down lint
+.PHONY: help run dev build test tidy generate_ent generate_api migrate_up migrate_diff docker_up docker_down lint
 
 # デフォルトターゲット
 help:
@@ -11,6 +11,7 @@ help:
 	@echo "  test             テストを実行"
 	@echo "  tidy             go mod tidy"
 	@echo "  generate_ent     entのコード生成"
+	@echo "  generate_api     OpenAPI定義からAPIコードを生成"
 	@echo "  migrate_up       マイグレーションを実行（auto-migrate）"
 	@echo "  migrate_diff     atlasでマイグレーションファイルを生成"
 	@echo "  docker_up        Docker Composeを起動"
@@ -40,6 +41,14 @@ tidy:
 # entコード生成
 generate_ent:
 	go generate ./internal/ent/...
+
+# OpenAPI定義からAPIコードを生成
+generate_api:
+	oapi-codegen \
+		--package=api \
+		--generate=types,echo-server,spec \
+		--o ./internal/presentation/public/api/api.go \
+		./openapi/openapi-public.yaml
 
 # DB マイグレーション (ent の auto-migrate)
 migrate_up:

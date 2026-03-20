@@ -1,134 +1,129 @@
-package integration_test
+package public
 
 import (
-	"context"
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
-	"P4nth3on-backend/internal/infrastructure/repository"
-	"P4nth3on-backend/internal/integration_test/common"
-	"P4nth3on-backend/internal/usecase"
-	"P4nth3on-backend/internal/usecase/input"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestUserIntegration_Create(t *testing.T) {
-	ctx := context.Background()
+func TestCreateUser_Success(t *testing.T) {
+	uid := fmt.Sprintf("uid_%d", time.Now().UnixNano())
+	email := "create_test@example.com"
+	name := "テストユーザー"
 
-	t.Run("ユーザー作成成功", func(t *testing.T) {
-		client := common.SetupTestClient(t)
-		defer client.Close()
+	body, _ := json.Marshal(map[string]string{"name": name})
+	req := httptest.NewRequest(http.MethodPost, "/v1/users", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(testUIDHeader, uid)
+	req.Header.Set(testEmailHeader, email)
+	rec := httptest.NewRecorder()
 
-		userRepo := repository.NewUserRepository(client)
-		userInteractor := usecase.NewUserInteractor(userRepo)
+	echoServer.ServeHTTP(rec, req)
 
-		userID := fmt.Sprintf("firebase_user_%d", time.Now().UnixNano())
-		email := "test@example.com"
-		name := "テストユーザー"
+	assert.Equal(t, http.StatusCreated, rec.Code, rec.Body.String())
 
-		result, err := userInteractor.Create(ctx, &input.CreateUserInput{
-			ID:    userID,
-			Email: email,
-			Name:  name,
-		})
-		if err != nil {
-			t.Fatalf("Create failed: %v", err)
-		}
-
-		if result == nil {
-			t.Fatal("expected result to be non-nil")
-		}
-		if result.ID != userID {
-			t.Errorf("expected user ID %s, got %s", userID, result.ID)
-		}
-		if result.Email != email {
-			t.Errorf("expected email %s, got %s", email, result.Email)
-		}
-		if result.Name != name {
-			t.Errorf("expected name %s, got %s", name, result.Name)
-		}
-	})
-
-	t.Run("重複ユーザーIDでエラー", func(t *testing.T) {
-		client := common.SetupTestClient(t)
-		defer client.Close()
-
-		userRepo := repository.NewUserRepository(client)
-		userInteractor := usecase.NewUserInteractor(userRepo)
-
-		userID := fmt.Sprintf("firebase_user_%d", time.Now().UnixNano())
-
-		_, err := userInteractor.Create(ctx, &input.CreateUserInput{
-			ID:    userID,
-			Email: "first@example.com",
-			Name:  "First User",
-		})
-		if err != nil {
-			t.Fatalf("first Create failed: %v", err)
-		}
-
-		_, err = userInteractor.Create(ctx, &input.CreateUserInput{
-			ID:    userID,
-			Email: "second@example.com",
-			Name:  "Second User",
-		})
-		if err == nil {
-			t.Error("expected error for duplicate user ID, got nil")
-		}
-	})
+	var resp map[string]any
+	err := json.NewDecoder(rec.Body).Decode(&resp)
+	assert.NoError(t, err)
+	assert.Equal(t, uid, resp["id"])
+	assert.Equal(t, email, resp["email"])
+	assert.Equal(t, name, resp["name"])
 }
 
-func TestUserIntegration_GetMe(t *testing.T) {
-	ctx := context.Background()
+func TestCreateUser_Unauthorized(t *testing.T) {
+	body, _ := json.Marshal(map[string]string{"name": "テスト"})
+	req := httptest.NewRequest(http.MethodPost, "/v1/users", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	// UIDヘッダーなし（未認証）
+	rec := httptest.NewRecorder()
 
-	t.Run("ユーザー取得成功", func(t *testing.T) {
-		client := common.SetupTestClient(t)
-		defer client.Close()
+	echoServer.ServeHTTP(rec, req)
 
-		userRepo := repository.NewUserRepository(client)
-		userInteractor := usecase.NewUserInteractor(userRepo)
+	assert.Equal(t, http.StatusUnauthorized, rec.Code, rec.Body.String())
+}
 
-		userID := fmt.Sprintf("firebase_user_%d", time.Now().UnixNano())
-		email := "getme@example.com"
-		name := "取得テストユーザー"
+func TestCreateUser_Duplicate(t *testing.T) {
+	uid := fmt.Sprintf("uid_dup_%d", time.Now().UnixNano())
+	email := "dup@example.com"
 
-		_, err := userInteractor.Create(ctx, &input.CreateUserInput{
-			ID:    userID,
-			Email: email,
-			Name:  name,
-		})
-		if err != nil {
-			t.Fatalf("Create failed: %v", err)
-		}
+	body, _ := json.Marshal(map[string]string{"name": "最初のユーザー"})
 
-		result, err := userInteractor.GetMe(ctx, &input.GetMeInput{ID: userID})
-		if err != nil {
-			t.Fatalf("GetMe failed: %v", err)
-		}
+	// 1回目
+	req1 := httptest.NewRequest(http.MethodPost, "/v1/users", bytes.NewReader(body))
+	req1.Header.Set("Content-Type", "application/json")
+	req1.Header.Set(testUIDHeader, uid)
+	req1.Header.Set(testEmailHeader, email)
+	rec1 := httptest.NewRecorder()
+	echoServer.ServeHTTP(rec1, req1)
+	assert.Equal(t, http.StatusCreated, rec1.Code)
 
-		if result == nil {
-			t.Fatal("expected result to be non-nil")
-		}
-		if result.ID != userID {
-			t.Errorf("expected user ID %s, got %s", userID, result.ID)
-		}
-		if result.Email != email {
-			t.Errorf("expected email %s, got %s", email, result.Email)
-		}
-	})
+	// 2回目（同じUID）
+	body2, _ := json.Marshal(map[string]string{"name": "重複ユーザー"})
+	req2 := httptest.NewRequest(http.MethodPost, "/v1/users", bytes.NewReader(body2))
+	req2.Header.Set("Content-Type", "application/json")
+	req2.Header.Set(testUIDHeader, uid)
+	req2.Header.Set(testEmailHeader, "other@example.com")
+	rec2 := httptest.NewRecorder()
+	echoServer.ServeHTTP(rec2, req2)
 
-	t.Run("存在しないユーザーはNotFoundエラー", func(t *testing.T) {
-		client := common.SetupTestClient(t)
-		defer client.Close()
+	assert.Equal(t, http.StatusConflict, rec2.Code, rec2.Body.String())
+}
 
-		userRepo := repository.NewUserRepository(client)
-		userInteractor := usecase.NewUserInteractor(userRepo)
+func TestGetMe_Success(t *testing.T) {
+	uid := fmt.Sprintf("uid_getme_%d", time.Now().UnixNano())
+	email := "getme@example.com"
+	name := "GetMeユーザー"
 
-		_, err := userInteractor.GetMe(ctx, &input.GetMeInput{
-			ID: fmt.Sprintf("nonexistent_%d", time.Now().UnixNano()),
-		})
-		if err == nil {
-			t.Error("expected error for nonexistent user, got nil")
-		}
-	})
+	// まずユーザーを作成
+	body, _ := json.Marshal(map[string]string{"name": name})
+	req := httptest.NewRequest(http.MethodPost, "/v1/users", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set(testUIDHeader, uid)
+	req.Header.Set(testEmailHeader, email)
+	rec := httptest.NewRecorder()
+	echoServer.ServeHTTP(rec, req)
+	assert.Equal(t, http.StatusCreated, rec.Code)
+
+	// GetMe
+	req2 := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
+	req2.Header.Set(testUIDHeader, uid)
+	req2.Header.Set(testEmailHeader, email)
+	rec2 := httptest.NewRecorder()
+	echoServer.ServeHTTP(rec2, req2)
+
+	assert.Equal(t, http.StatusOK, rec2.Code, rec2.Body.String())
+
+	var resp map[string]any
+	err := json.NewDecoder(rec2.Body).Decode(&resp)
+	assert.NoError(t, err)
+	assert.Equal(t, uid, resp["id"])
+	assert.Equal(t, email, resp["email"])
+	assert.Equal(t, name, resp["name"])
+}
+
+func TestGetMe_NotFound(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
+	req.Header.Set(testUIDHeader, fmt.Sprintf("nonexistent_%d", time.Now().UnixNano()))
+	req.Header.Set(testEmailHeader, "none@example.com")
+	rec := httptest.NewRecorder()
+
+	echoServer.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusNotFound, rec.Code, rec.Body.String())
+}
+
+func TestGetMe_Unauthorized(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/users/me", nil)
+	// UIDヘッダーなし
+	rec := httptest.NewRecorder()
+
+	echoServer.ServeHTTP(rec, req)
+
+	assert.Equal(t, http.StatusUnauthorized, rec.Code, rec.Body.String())
 }

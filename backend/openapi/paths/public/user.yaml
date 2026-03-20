@@ -1,0 +1,27 @@
+post:
+  tags:
+    - users
+  summary: ユーザー作成
+  description: Firebase認証済みユーザーをDBに登録する
+  operationId: createUser
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: '../../components/schemas/user.yaml#/CreateUserRequest'
+  responses:
+    '201':
+      description: ユーザー作成成功
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/user.yaml#/User'
+    '400':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'
+    '401':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'
+    '409':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'
+    '500':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'

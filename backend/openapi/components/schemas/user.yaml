@@ -1,0 +1,30 @@
+User:
+  type: object
+  required:
+    - id
+    - email
+    - name
+  properties:
+    id:
+      type: string
+      description: Firebase UID
+      example: "abc123xyz"
+    email:
+      type: string
+      format: email
+      description: メールアドレス
+      example: "user@example.com"
+    name:
+      type: string
+      description: ユーザー名
+      example: "山田太郎"
+
+CreateUserRequest:
+  type: object
+  required:
+    - name
+  properties:
+    name:
+      type: string
+      description: ユーザー名
+      example: "山田太郎"

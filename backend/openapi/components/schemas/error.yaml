@@ -1,0 +1,9 @@
+ErrorResponse:
+  type: object
+  properties:
+    code:
+      type: integer
+      description: エラーコード
+    detail:
+      type: string
+      description: エラーメッセージ
