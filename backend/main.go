@@ -1,36 +1,51 @@
 package main
 
 import (
+	//"context"
+	//"fmt"
+	"log"
+	//"os"
 	"net/http"
+
+	"github.com/joho/godotenv"
 
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"google.golang.org/genai"
+	//"google.golang.org/genai"
 )
 
 func main() {
 	e := echo.New()
 	e.Use(middleware.RequestLogger())
 
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading .env file")
+	}
+
+	/*ctx := context.Background()
+
 	client, err := genai.NewClient(ctx, &genai.ClientConfig{
-		APIKey : apiKey,
+		APIKey : os.Getenv("GEMINI_API_KEY"),
 		Backend: genai.BackendGeminiAPI,
 	})
-
-	model := client.GenerativeModel("gemini-1.5-flash")
-
-	resp, err := model.GenerateContent(ctx, genai.Text("富士山の高さは？"))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to create client: %v", err)
 	}
 
-	// 4. レスポンスの解析
-	if len(resp.Candidates) > 0 {
-		for _, part := range resp.Candidates[0].Content.Parts {
-			fmt.Println(part)
-		}
-	}
+
+	result, err := client.Models.GenerateContent(
+        ctx,
+        "gemini-3-flash-preview",
+        genai.Text("Explain how AI works in a few words"),
+        nil,
+    )
+    if err != nil {
+        log.Fatal(err)
+    }
+    fmt.Println(result.Text())*/
+
 
 	e.GET("/", func(c *echo.Context) error {
 		return c.String(http.StatusOK, "Hello, World!")
