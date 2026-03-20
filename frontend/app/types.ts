@@ -7,6 +7,7 @@ export type GreatPerson = {
   description: string;
   avatarColor: string;
   avatarInitial: string;
+  imagePath: string;
   systemPrompt: string;
 };
 

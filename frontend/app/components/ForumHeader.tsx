@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Box, Typography, Chip } from "@mui/material";
-import ForumIcon from "@mui/icons-material/Forum";
+import Image from "next/image";
 import { blue, slate } from "../theme/colors";
 
 type Props = {
@@ -41,7 +41,7 @@ export default function ForumHeader({ topic }: Props) {
           maxWidth: "1200px",
           mx: "auto",
           px: { xs: 2, sm: 3 },
-          py: 1.5,
+          py: 1,
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
@@ -51,17 +51,21 @@ export default function ForumHeader({ topic }: Props) {
         <Box display="flex" alignItems="center" gap={1.5}>
           <Box
             sx={{
-              width: 40,
-              height: 40,
+              width: 44,
+              height: 44,
               borderRadius: 2,
-              background: `linear-gradient(135deg, ${blue[500]}, #6366f1)`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 4px 12px rgba(59, 130, 246, 0.3)",
+              overflow: "hidden",
+              flexShrink: 0,
+              boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
             }}
           >
-            <ForumIcon sx={{ color: "white", fontSize: 22 }} />
+            <Image
+              src="/logo.png"
+              alt="万P4n神th3殿on"
+              width={44}
+              height={44}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
           </Box>
           <Box>
             <Typography
@@ -72,7 +76,7 @@ export default function ForumHeader({ topic }: Props) {
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 lineHeight: 1.2,
-                fontSize: { xs: "1rem", sm: "1.25rem" },
+                fontSize: { xs: "1rem", sm: "1.1rem" },
               }}
             >
               万P4n神th3殿on

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 あなたは今、様々な時代・分野の偉人たちと議論しています。
 自分の立場・時代・価値観に基づいて、議題に対する意見を述べてください。
 他の参加者の発言に対して反応し、建設的な議論を進めてください。
-発言は200〜400文字程度にまとめてください。
+発言は150〜300文字程度で、必ず文章を完結させてください（途中で切れないこと）。
 自己紹介は不要です。直接議論の内容を話してください。`;
 
   const contents: ChatMessage[] = trimmedHistory.map((msg) => ({
@@ -65,8 +65,11 @@ export async function POST(req: NextRequest) {
         },
         contents,
         generationConfig: {
-          temperature: 0.9,
-          maxOutputTokens: 512,
+          temperature: 1.0,
+          maxOutputTokens: 1024,
+          thinkingConfig: {
+            thinkingBudget: 0,
+          },
         },
       }),
     }
