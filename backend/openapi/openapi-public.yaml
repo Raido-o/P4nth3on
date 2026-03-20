@@ -1,0 +1,111 @@
+openapi: 3.0.3
+info:
+  title: P4nth3on API
+  description: P4nth3on public API
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /health:
+    $ref: './paths/public/healthcheck.yaml'
+  /v1/users:
+    post:
+      tags:
+        - users
+      summary: ユーザー作成
+      description: Firebase認証済みユーザーをDBに登録する
+      operationId: createUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: ユーザー作成成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /v1/users/me:
+    get:
+      tags:
+        - users
+      summary: 自分のユーザー情報取得
+      description: Firebase認証トークンからユーザー情報を取得する
+      operationId: getMe
+      responses:
+        '200':
+          description: ユーザー情報取得成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      description: Firebase ID Token
+
+  schemas:
+    User:
+      $ref: './components/schemas/user.yaml#/User'
+    CreateUserRequest:
+      $ref: './components/schemas/user.yaml#/CreateUserRequest'
+    ErrorResponse:
+      $ref: './components/schemas/error.yaml#/ErrorResponse'
+
+  responses:
+    BadRequest:
+      description: リクエストが不正
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: 認証が必要
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: リソースが見つからない
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: リソースが既に存在する
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalServerError:
+      description: サーバー内部エラー
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'

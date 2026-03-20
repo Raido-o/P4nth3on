@@ -1,0 +1,19 @@
+get:
+  tags:
+    - users
+  summary: 自分のユーザー情報取得
+  description: Firebase認証トークンからユーザー情報を取得する
+  operationId: getMe
+  responses:
+    '200':
+      description: ユーザー情報取得成功
+      content:
+        application/json:
+          schema:
+            $ref: '../../components/schemas/user.yaml#/User'
+    '401':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'
+    '404':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'
+    '500':
+      $ref: '../../components/schemas/error.yaml#/ErrorResponse'

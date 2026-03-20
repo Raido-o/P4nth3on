@@ -1,1 +1,22 @@
+# バイナリ
+bin/
+tmp/
+
+# 環境変数
 .env
+
+# Firebase credentials
+firebase-credentials.json
+*-firebase.json
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# macOS
+.DS_Store
+
+# テストキャッシュ
+testdata/
+build-errors.log
